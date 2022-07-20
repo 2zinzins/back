@@ -14,7 +14,7 @@ function sendRegisterPositionRequest(position) {
         if (xhr.status == 200) {
             logsList.innerHTML += `<li>Nouvelle position enregistrée avec succès!</li>`
         } else {
-            logErrorSending()
+            logErrorSending(xhr.responseText)
         }
     }
 

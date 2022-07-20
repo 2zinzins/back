@@ -6,6 +6,10 @@ module.exports = function () {
         actual: null
     };
 
+    const positionWithSameCoords = ({lon, lat, at}) => {
+        return [...positionData.history, positionData.actual].find((test)=>test.lon==lon&&test.lat==lat)
+    }
+
     const registerPosition = ({lon, lat, at}) => {
         if(positionData.actual) {
             positionData.history.push({...positionData.actual});
@@ -41,7 +45,8 @@ module.exports = function () {
         positionData,
         registerPosition,
         savePositionDataToFile,
-        loadPositionDataFromFile
+        loadPositionDataFromFile,
+        positionWithSameCoords
     }
 
 }

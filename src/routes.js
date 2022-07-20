@@ -9,9 +9,13 @@ module.exports = function(router, services) {
 
     router.post('/api/position/register', function(req, res) {
         if(services.tokenManager.isTokenValid(req.body.registerToken)) {
-            services.tokenManager.invalidateToken(req.body.registerToken);
-            services.positionManager.registerPosition(req.body.position);
-            res.status(200).send('Position actualisée');
+            if(services.positionManager.positionWithSameCoords(req.body.position)) {
+                res.status(403).send(`Position déjà enregistrée`);
+            } else {
+                // services.tokenManager.invalidateToken(req.body.registerToken);
+                services.positionManager.registerPosition(req.body.position);
+                res.status(200).send('Position actualisée');
+            }
         } else {
             res.status(403).send('Token invalide');
         }

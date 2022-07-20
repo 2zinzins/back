@@ -63,10 +63,10 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
         ],
         view: new ol.View({
             center: ol.proj.fromLonLat([
-                positionData.actual.lon,
-                positionData.actual.lat
+                positionData.history[0].lon,
+                positionData.history[0].lat
             ]),
-            zoom: 9
+            zoom: 11
         })
     });
 
@@ -74,10 +74,12 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
     const linesSource = new ol.source.Vector({});
 
     const allPositions = [...positionData.history, positionData.actual]
-    const lineAnimations = [];
+    
+    const animationsTl = gsap.timeline();
 
     await new Promise((resolve)=>setTimeout(resolve, 1000));
     allPositions.forEach(async (position, index) => {
+        let animationLayer = null;
         let positionFeature = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([
             position.lon,
             position.lat
@@ -88,7 +90,6 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
         position.label = `${position.day}\nà ${position.date.getHours()}H`
 
         positionFeature.attributes = position
-        // positionsSource.addFeature(positionFeature)
 
         if(index==0) {
             positionsSource.addFeature(positionFeature)
@@ -96,36 +97,49 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
             const startCoords = ol.proj.transform([
                 allPositions[index-1].lon, 
                 allPositions[index-1].lat,
-            ], 'EPSG:4326', 'EPSG:3857')
-            const endCoords = ol.proj.transform([
+            ], 'EPSG:4326', 'EPSG:3857');
+            const endCoords = {
+                ...startCoords
+            }
+            const finalEndCoords =  ol.proj.transform([
                 position.lon, 
                 position.lat,
-            ], 'EPSG:4326', 'EPSG:3857')
+            ], 'EPSG:4326', 'EPSG:3857');
+            
 
-            lineAnimations.push(async ()=>{
-                await drawAnimatedLine({
-                    map,
-                    startCoords,
-                    endCoords,
-                    style: feature=>new ol.style.Style({
-                        fill: new ol.style.Fill({ 
-                            color: '#000000', weight: 10 }),
-                        stroke: new ol.style.Stroke({ 
-                            color: '#000000', 
-                            width: 3,
-                            lineDash: [5,5],
-                        })
-                    }),
-                    steps: 50,
-                    time: TOTAL_LINE_ANIMATION_TIME/20*index
-                })
-                positionsSource.addFeature(positionFeature)
+            animationsTl.to(endCoords, {
+                duration: 1,
+                ...finalEndCoords,
+                onUpdate: function() {
+                    const line = new ol.geom.LineString([startCoords, endCoords]);
+                    const lineFeature = new ol.Feature({
+                        geometry: line
+                    });
+                    const lineSource = new ol.source.Vector({});
+                    lineSource.addFeature(lineFeature);
+                    lineLayer = new ol.layer.Vector({
+                        source: lineSource,
+                        style: feature=>new ol.style.Style({
+                            fill: new ol.style.Fill({ 
+                                color: '#000000', weight: 10 }),
+                            stroke: new ol.style.Stroke({ 
+                                color: '#000000', 
+                                width: 3,
+                                lineDash: [5,5],
+                            })
+                        }),
+                    })
+                    map.addLayer(lineLayer);
+                    if(animationLayer) map.removeLayer(animationLayer);
+                    animationLayer = lineLayer;
+                    map.getView().setCenter(endCoords);
+                },
+                onComplete: function() {
+                    positionsSource.addFeature(positionFeature)
+                }
             })
         }
     })
-
-    lineAnimations.reduce((prev, cur) => prev.then(cur), Promise.resolve());
-
 
 
 
@@ -167,5 +181,11 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
         }
     });
     map.addLayer(clusteredPositionsLayer)
+
+
+    const linesLayer = new ol.layer.Vector({
+        source: linesSource
+    });
+    map.addLayer(linesLayer)
 
 })()
