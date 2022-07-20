@@ -113,7 +113,7 @@ fetchPositionData().then(rawPositionData=>{
                         })
                     }),
                     steps: 50,
-                    time: 600
+                    time: 1000
                 })
                 positionsSource.addFeature(positionFeature)
             })
@@ -131,7 +131,8 @@ fetchPositionData().then(rawPositionData=>{
         style: feature=>new ol.style.Style({
             image: new ol.style.Icon({
                 src: '/place.png',
-                anchor: [0.5, 1]
+                anchor: [0.5, 1],
+                scale: 0.8
             }),
             text: new ol.style.Text({
                 text: feature.attributes.label,
@@ -155,27 +156,12 @@ fetchPositionData().then(rawPositionData=>{
             return new ol.style.Style({
                 image: new ol.style.Icon({
                     src: '/place.png',
-                    anchor: [0.5, 1]
+                    anchor: [0.5, 1],
+                    scale: 0.8
                 })
             })
         }
     });
     map.addLayer(clusteredPositionsLayer)
-
-
-    const linesLayer = new ol.layer.Vector({
-        source: linesSource,
-        style: new ol.style.Style({
-            fill: new ol.style.Fill({ 
-                color: '#000000', weight: 10 }),
-            stroke: new ol.style.Stroke({ 
-                color: '#000000', 
-                width: 3,
-                lineDash: [10,10],
-                lineDashOffset: 1000
-            })
-        })
-    })
-    map.addLayer(linesLayer)
-    
+   
 })
