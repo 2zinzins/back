@@ -27,6 +27,10 @@ module.exports = function(router, services) {
         }
     })
 
+    router.get('/map', function(req, res) {
+        res.render('position/map');
+    })
+
     router.get('/*', function(req, res) {
         res.sendStatus(404);
     });
