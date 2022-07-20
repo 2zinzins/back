@@ -1,7 +1,9 @@
 const API_GET_POSITION = '/api/position/get';
 const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const CLUSTER_DISTANCE = 30;
-const CLUSTER_RESOLUTION = 35;
+const CLUSTER_RESOLUTION = 80;
+const TOTAL_LINE_ANIMATION_TIME = 3000; // milliseconds
+
 function fetchPositionData() {   
     return new Promise((resolve, reject) => {
 
@@ -18,6 +20,7 @@ function fetchPositionData() {
 
 function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
     return new Promise((resolve)=>{
+        console.time('test');
         const directionX = (endCoords[0] - startCoords[0]) / steps;
         const directionY = (endCoords[1] - startCoords[1]) / steps;
         let i = 0;
@@ -25,6 +28,7 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
         let ivlDraw = setInterval(function () {
             if (i > steps) {
                 clearInterval(ivlDraw);
+                console.timeEnd('test');
                 resolve();
                 return;
             }
@@ -46,10 +50,11 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
         }, time / steps);
     })
 }
+(async ()=>{
 
-fetchPositionData().then(rawPositionData=>{
+    const rawPositionData = await fetchPositionData();
     const positionData = JSON.parse(rawPositionData);
-    
+
     const map = new ol.Map({
         target: 'map',
         layers: [
@@ -61,7 +66,7 @@ fetchPositionData().then(rawPositionData=>{
                 positionData.actual.lon,
                 positionData.actual.lat
             ]),
-            zoom: 11
+            zoom: 9
         })
     });
 
@@ -69,9 +74,9 @@ fetchPositionData().then(rawPositionData=>{
     const linesSource = new ol.source.Vector({});
 
     const allPositions = [...positionData.history, positionData.actual]
-
     const lineAnimations = [];
 
+    await new Promise((resolve)=>setTimeout(resolve, 1000));
     allPositions.forEach(async (position, index) => {
         let positionFeature = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([
             position.lon,
@@ -108,12 +113,11 @@ fetchPositionData().then(rawPositionData=>{
                         stroke: new ol.style.Stroke({ 
                             color: '#000000', 
                             width: 3,
-                            lineDash: [10,10],
-                            lineDashOffset: 1000
+                            lineDash: [5,5],
                         })
                     }),
                     steps: 50,
-                    time: 1000
+                    time: TOTAL_LINE_ANIMATION_TIME/20*index
                 })
                 positionsSource.addFeature(positionFeature)
             })
@@ -122,7 +126,7 @@ fetchPositionData().then(rawPositionData=>{
 
     lineAnimations.reduce((prev, cur) => prev.then(cur), Promise.resolve());
 
-    
+
 
 
     const unclusteredPositionsLayer = new ol.layer.Vector({
@@ -163,5 +167,5 @@ fetchPositionData().then(rawPositionData=>{
         }
     });
     map.addLayer(clusteredPositionsLayer)
-   
-})
+
+})()
