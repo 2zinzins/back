@@ -1,7 +1,48 @@
 body {
+    padding: 10vh 1rem;
+    margin: 0;
     width: 100vw;
     height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    /* align-items: center; */
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none;
+}
+.logger-container {
+    list-style: none;
+    padding: 0;
+}
+.logger-line {
+    --bg: #fdfdfd;
+    --color: #1a1a1a;
+    background-color: var(--bg);
+    color: var(--color);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #efefef;
+}
+.logger-action {
+    background-color: #efefef;
+    padding: 0.8rem 1rem;
+    border: none; 
+    width: 100%;
+    cursor: pointer;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+}
+.logger-line[data-state="success"] {
+    --bg: rgb(213, 237, 213);
+    --color: rgb(74, 96, 74);
+}
+.logger-line[data-state="error"] {
+    --bg: rgb(249, 217, 214);
+    --color: rgb(102, 75, 72);
+}
+.logger-line[data-state="loading"] {
+    --bg: rgb(248, 241, 216);
+    --color: rgb(118, 112, 92);
 }

@@ -11,11 +11,15 @@
 
     <main>
         <h1>Enregistrer la position GPS</h1>
-        <p>Status:</p>
-        <ol id="logs"></ol>
+        <div>
+            <p>Status:</p>
+            <ol id="logs" class="logger-container"></ol>
+            <button id="registerPositionBtn" class="hidden logger-action">Enregistrer la position</button>
+        </div>
     </main>
 
     <script>const registerToken = "<%= registerToken %>";</script>
+    <script src="/position/register/logger.js"></script>
     <script src="/position/register/main.js"></script>
 </body>
 </html>

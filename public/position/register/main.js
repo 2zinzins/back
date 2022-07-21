@@ -1,9 +1,20 @@
 const API_REGISTER_POSITION = '/api/position/register';
 const logsList = document.getElementById('logs');
+const registerPositionBtn = document.getElementById('registerPositionBtn');
+
+const logger = new Logger(logsList);
 
 function sendRegisterPositionRequest(position) {   
-    logsList.innerHTML += `<li>Envoi de la position au serveur...</li>`
-    const logErrorSending = e=>{logsList.innerHTML += `<li>Erreur: ${e}</li>`};
+    logger.log({
+        text: 'Envoi de la position au serveur...',
+        state: 'loading'
+    })
+    const logErrorSending = e=>{
+        logger.getLast().update({
+            text: `Erreur serveur: ${e}`,
+            state: 'error'
+        })
+    }
 
     var xhr = new XMLHttpRequest();
     xhr.open("POST", API_REGISTER_POSITION, true);
@@ -12,7 +23,10 @@ function sendRegisterPositionRequest(position) {
 
     xhr.onload = function () {
         if (xhr.status == 200) {
-            logsList.innerHTML += `<li>Nouvelle position enregistrée avec succès!</li>`
+            logger.getLast().update({
+                text: `Nouvelle position enregistrée avec succès!`,
+                state: 'success'
+            })
         } else {
             logErrorSending(xhr.responseText)
         }
@@ -33,18 +47,37 @@ function sendRegisterPositionRequest(position) {
 }
 
 function geolocationSuccess(position) {
-    logsList.innerHTML += `<li>Position récupérée: ${position.coords.latitude}, ${position.coords.longitude}</li>`
-    sendRegisterPositionRequest(position)
+    logger.getLast().update({
+        text: `Position récupérée: ${position.coords.latitude}, ${position.coords.longitude}`,
+        state: 'success'
+    })
+    registerPositionBtn.addEventListener('click', function() {
+        registerPositionBtn.classList.add('hidden')
+        sendRegisterPositionRequest(position)
+    })
+    registerPositionBtn.classList.remove('hidden')
 }
 
 function geolocationFailure() {
-    logsList.innerHTML += "<li>Veuillez autoriser l'accès à la position</li>"
+    logger.getLast().update({
+        text: 'Veuillez autoriser l\'accès à la position',
+        state: 'error'
+    })
 }
 
 if(navigator.geolocation){
-    logsList.innerHTML += "<li>Géolocalisation supportée</li>"
-    logsList.innerHTML += "<li>Récupération de la position en cours...</li>"
+    logger.log({
+        text: 'Géolocalisation supportée',
+        state: 'success'
+    })
+    logger.log({
+        text: 'Récupération de la position en cours...',
+        state: 'loading'
+    })
     navigator.geolocation.getCurrentPosition(geolocationSuccess, geolocationFailure);
 } else {
-    logsList.innerHTML += "<li>Géolocalisation non supportée</li>"
+    logger.log({
+        text: 'Géolocalisation non supportée',
+        state: 'error'
+    })
 }
