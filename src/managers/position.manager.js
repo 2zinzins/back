@@ -7,14 +7,15 @@ module.exports = function () {
     };
 
     const positionWithSameCoords = ({lon, lat, at}) => {
+        if(positionData.history.length==0 || !positionData.actual) return false;
         return [...positionData.history, positionData.actual].find((test)=>test.lon==lon&&test.lat==lat)
     }
 
-    const registerPosition = ({lon, lat, at}) => {
+    const registerPosition = ({lon, lat, at, id}) => {
         if(positionData.actual) {
             positionData.history.push({...positionData.actual});
         }
-        positionData.actual = {lon, lat, at};
+        positionData.actual = {lon, lat, at, id};
         savePositionDataToFile();
     }
 
@@ -31,8 +32,8 @@ module.exports = function () {
             let rawdata = fs.readFileSync('storage/position.json');
             let jsonData = JSON.parse(rawdata);
             
-            positionData.history = jsonData.history;
-            positionData.actual = jsonData.actual;
+            positionData.history = jsonData.history || [];
+            positionData.actual = jsonData.actual || null;
 
         } catch(e) {
             console.error(e);

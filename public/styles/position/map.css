@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+#map {
+    height: 100px;
+    width: 100%;
+    margin: auto
+}
+
+.animate-again {
+    top: 65px;
+    left: .5em;
+}
+.ol-touch .animate-again {
+    top: 80px;
+}

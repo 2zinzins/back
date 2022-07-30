@@ -41,7 +41,8 @@ function sendRegisterPositionRequest(position) {
         position: {
             lon: position.coords.longitude,
             lat: position.coords.latitude,
-            at: Date.now()
+            at: Date.now(),
+            id: Array(4).fill().map(()=>Math.random().toString(36).slice(4)).join('')
         }
     }));
 }
