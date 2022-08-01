@@ -18,38 +18,6 @@ function fetchPositionData() {
     })
 }
 
-function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
-    return new Promise((resolve)=>{
-        console.time('test');
-        const directionX = (endCoords[0] - startCoords[0]) / steps;
-        const directionY = (endCoords[1] - startCoords[1]) / steps;
-        let i = 0;
-        let prevLayer;
-        let ivlDraw = setInterval(function () {
-            if (i > steps) {
-                clearInterval(ivlDraw);
-                console.timeEnd('test');
-                resolve();
-                return;
-            }
-            const newEndCoords = [startCoords[0] + i * directionX, startCoords[1] + i * directionY];
-            const line = new ol.geom.LineString([startCoords, newEndCoords]);
-            const lineFeature = new ol.Feature({
-                geometry: line
-            });
-            const lineSource = new ol.source.Vector({});
-            lineSource.addFeature(lineFeature);
-            lineLayer = new ol.layer.Vector({
-                source: lineSource,
-                style
-            })
-            map.addLayer(lineLayer);
-            if(prevLayer) map.removeLayer(prevLayer);
-            prevLayer = lineLayer;
-            i++;
-        }, time / steps);
-    })
-}
 (async ()=>{
     window.lc.appKey = "map-sng";
 
@@ -137,15 +105,7 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
             lineSource.addFeature(lineFeature);
             lineLayer = new ol.layer.Vector({
                 source: lineSource,
-                style: feature=>new ol.style.Style({
-                    fill: new ol.style.Fill({ 
-                        color: '#000000', weight: 10 }),
-                    stroke: new ol.style.Stroke({ 
-                        color: '#000000', 
-                        width: 3,
-                        lineDash: [5,5],
-                    })
-                }),
+                style: MAP_STYLE.line,
             })
             map.addLayer(lineLayer);
             if(animationLayer) map.removeLayer(animationLayer);
@@ -200,15 +160,7 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
                     lineSource.addFeature(lineFeature);
                     lineLayer = new ol.layer.Vector({
                         source: lineSource,
-                        style: feature=>new ol.style.Style({
-                            fill: new ol.style.Fill({ 
-                                color: '#000000', weight: 10 }),
-                            stroke: new ol.style.Stroke({ 
-                                color: '#000000', 
-                                width: 3,
-                                lineDash: [5,5],
-                            })
-                        }),
+                        style: MAP_STYLE.line,
                     })
                     map.addLayer(lineLayer);
                     if(animationLayer) map.removeLayer(animationLayer);
@@ -228,21 +180,8 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
     const unclusteredPositionsLayer = new ol.layer.Vector({
         maxResolution: CLUSTER_RESOLUTION,
         source: positionsSource,
-        style: feature=>new ol.style.Style({
-            image: new ol.style.Icon({
-                src: '/place.png',
-                anchor: [0.5, 1],
-                scale: 0.8
-            }),
-            text: new ol.style.Text({
-                text: feature.attributes.label,
-                font: '15px Arial',
-                fill: new ol.style.Fill({
-                    color: '#000'
-                }),
-                offsetY: 20
-            })
-        })
+        style: MAP_STYLE.unclustered_place,
+        zIndex: 1000
     });
     map.addLayer(unclusteredPositionsLayer)
 
@@ -252,15 +191,8 @@ function drawAnimatedLine({map, startCoords, endCoords, style, steps, time}) {
             distance: CLUSTER_DISTANCE,
             source: positionsSource
         }),
-        style: function(feature) {
-            return new ol.style.Style({
-                image: new ol.style.Icon({
-                    src: '/place.png',
-                    anchor: [0.5, 1],
-                    scale: 0.8
-                })
-            })
-        }
+        style: MAP_STYLE.clustered_place,
+        zIndex: 1000
     });
     map.addLayer(clusteredPositionsLayer)
 
