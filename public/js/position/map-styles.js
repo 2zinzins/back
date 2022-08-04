@@ -22,7 +22,11 @@ window.MAP_STYLE = {
             text: feature.attributes.label,
             font: '15px Arial',
             fill: new ol.style.Fill({
-                color: '#000'
+                color: '#111'
+            }),
+            stroke: new ol.style.Stroke({
+                color: '#FFF',
+                width: 6
             }),
             offsetY: 60
         })

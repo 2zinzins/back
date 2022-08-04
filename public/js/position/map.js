@@ -3,6 +3,23 @@ const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Sa
 const CLUSTER_DISTANCE = 30;
 const CLUSTER_RESOLUTION = 80;
 const TOTAL_LINE_ANIMATION_TIME = 3000; // milliseconds
+const GEOGRAPHIC_PROJ  = "EPSG:4326"; 
+const MERCATOR_PROJ = "EPSG:3857";
+const BASE_ZOOM = 11;
+
+function getAnimationDurationFromDistance(d) {
+    return getBaseLog(10, d/500);
+}
+
+function getBaseLog(base, x) {
+    return Math.log(x) / Math.log(base);
+}
+
+function getZoomFromTimeAndDuration(t, d) {
+    const f = 1/8; // curve flexion 
+    const s = d**4; // flexion sensibility 
+    return BASE_ZOOM + ((f*s)/8)*( Math.sin(Math.PI*((4*t+d)/(2*d)))-1)
+}
 
 function fetchPositionData() {   
     return new Promise((resolve, reject) => {
@@ -46,7 +63,7 @@ function fetchPositionData() {
                     positionData.actual.lat
                 ]
             ),
-            zoom: 11
+            zoom: BASE_ZOOM
         })
     });
 
@@ -68,8 +85,8 @@ function fetchPositionData() {
         positionsToAnimate = [...allPositions];
     }
 
-    console.log(positionsToRenderDirectly);
-    console.log(positionsToAnimate);
+    console.log('to render directly', positionsToRenderDirectly);
+    console.log('to animate', positionsToAnimate);
 
     // direct rendering
     positionsToRenderDirectly.forEach(async (position, index) => {
@@ -86,34 +103,34 @@ function fetchPositionData() {
         positionFeature.attributes = position
 
         if(index==0) {
-            positionsSource.addFeature(positionFeature)
-        } else {
-            const startCoords = ol.proj.transform([
-                positionsToRenderDirectly[index-1].lon, 
-                positionsToRenderDirectly[index-1].lat,
-            ], 'EPSG:4326', 'EPSG:3857');
-            const endCoords =  ol.proj.transform([
-                position.lon, 
-                position.lat,
-            ], 'EPSG:4326', 'EPSG:3857');
-
-            const line = new ol.geom.LineString([startCoords, endCoords]);
-            const lineFeature = new ol.Feature({
-                geometry: line
-            });
-            const lineSource = new ol.source.Vector({});
-            lineSource.addFeature(lineFeature);
-            lineLayer = new ol.layer.Vector({
-                source: lineSource,
-                style: MAP_STYLE.line,
-            })
-            map.addLayer(lineLayer);
-            if(animationLayer) map.removeLayer(animationLayer);
-            animationLayer = lineLayer;
-            map.getView().setCenter(endCoords);
-
-            positionsSource.addFeature(positionFeature)
+            positionsSource.addFeature(positionFeature);
+            return;
         }
+        const startCoords = ol.proj.transform([
+            positionsToRenderDirectly[index-1].lon, 
+            positionsToRenderDirectly[index-1].lat,
+        ], 'EPSG:4326', 'EPSG:3857');
+        const endCoords =  ol.proj.transform([
+            position.lon, 
+            position.lat,
+        ], 'EPSG:4326', 'EPSG:3857');
+
+        const line = new ol.geom.LineString([startCoords, endCoords]);
+        const lineFeature = new ol.Feature({
+            geometry: line
+        });
+        const lineSource = new ol.source.Vector({});
+        lineSource.addFeature(lineFeature);
+        lineLayer = new ol.layer.Vector({
+            source: lineSource,
+            style: MAP_STYLE.line,
+        })
+        map.addLayer(lineLayer);
+        if(animationLayer) map.removeLayer(animationLayer);
+        animationLayer = lineLayer;
+        map.getView().setCenter(endCoords);
+
+        positionsSource.addFeature(positionFeature)
     })
     
     // animation rendering
@@ -133,46 +150,58 @@ function fetchPositionData() {
         positionFeature.attributes = position
 
         if(index==0) {
-            positionsSource.addFeature(positionFeature)
-        } else {
-            const startCoords = ol.proj.transform([
-                positionsToAnimate[index-1].lon, 
-                positionsToAnimate[index-1].lat,
-            ], 'EPSG:4326', 'EPSG:3857');
-            const endCoords = {
-                ...startCoords
-            }
-            const finalEndCoords =  ol.proj.transform([
-                position.lon, 
-                position.lat,
-            ], 'EPSG:4326', 'EPSG:3857');
-            
-
-            animationsTl.to(endCoords, {
-                duration: 1,
-                ...finalEndCoords,
-                onUpdate: function() {
-                    const line = new ol.geom.LineString([startCoords, endCoords]);
-                    const lineFeature = new ol.Feature({
-                        geometry: line
-                    });
-                    const lineSource = new ol.source.Vector({});
-                    lineSource.addFeature(lineFeature);
-                    lineLayer = new ol.layer.Vector({
-                        source: lineSource,
-                        style: MAP_STYLE.line,
-                    })
-                    map.addLayer(lineLayer);
-                    if(animationLayer) map.removeLayer(animationLayer);
-                    animationLayer = lineLayer;
-                    map.getView().setCenter(endCoords);
-                },
-                onComplete: function() {
-                    positionsSource.addFeature(positionFeature)
-                    window.lc.set(LAST_ANIMATED_ID_LC_ITEM, positionFeature.attributes.id)
-                }
-            })
+            positionsSource.addFeature(positionFeature);
+            return;
         }
+
+        const startCoords = ol.proj.transform([
+            positionsToAnimate[index-1].lon, 
+            positionsToAnimate[index-1].lat,
+        ], GEOGRAPHIC_PROJ, MERCATOR_PROJ);
+
+        const animationCoords = {
+            ...startCoords
+        }
+
+        const endCoords =  ol.proj.transform([
+            position.lon, 
+            position.lat,
+        ], GEOGRAPHIC_PROJ, MERCATOR_PROJ);
+        
+        const distanceBetweenStartEnd = ol.sphere.getLength(new ol.geom.LineString([startCoords, endCoords])); 
+        const duration = getAnimationDurationFromDistance(distanceBetweenStartEnd);
+
+        animationsTl.to(animationCoords, {
+            duration,
+            ...endCoords,
+            // onStart: function() {
+            //     console.groupCollapsed(`animation\nduration: ${duration}\ndistance: ${distanceBetweenStartEnd}`);
+            // },
+            onUpdate: function() {
+                const line = new ol.geom.LineString([startCoords, animationCoords]);
+                const lineFeature = new ol.Feature({
+                    geometry: line
+                });
+                const lineSource = new ol.source.Vector({});
+                lineSource.addFeature(lineFeature);
+                lineLayer = new ol.layer.Vector({
+                    source: lineSource,
+                    style: MAP_STYLE.line,
+                })
+                map.addLayer(lineLayer);
+                if(animationLayer) map.removeLayer(animationLayer);
+                animationLayer = lineLayer;
+                map.getView().setCenter(animationCoords);
+                let zoom = getZoomFromTimeAndDuration(this.time(), duration);
+                // console.log(zoom, this.time());
+                map.getView().setZoom(zoom);
+            },
+            onComplete: function() {
+                // console.groupEnd();
+                positionsSource.addFeature(positionFeature)
+                window.lc.set(LAST_ANIMATED_ID_LC_ITEM, positionFeature.attributes.id)
+            }
+        })
     })
 
 
