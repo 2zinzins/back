@@ -22,6 +22,9 @@ module.exports = function () {
     const savePositionDataToFile = () => {
         try {
             let jsonData = JSON.stringify(positionData);
+            
+            if (!fs.existsSync('storage')) fs.mkdirSync('storage');
+
             fs.writeFileSync('storage/position.json', jsonData);            
         } catch(e) {
             console.error(e);
@@ -29,6 +32,8 @@ module.exports = function () {
     }
     const loadPositionDataFromFile = () => {
         try {
+            if (!fs.existsSync('storage')) fs.mkdirSync('storage');
+
             let rawdata = fs.readFileSync('storage/position.json');
             let jsonData = JSON.parse(rawdata);
             
