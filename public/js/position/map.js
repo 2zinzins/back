@@ -78,11 +78,15 @@ function fetchPositionData() {
     let positionsToAnimate = [];
     const lastAnimatedId = window.lc.get(LAST_ANIMATED_ID_LC_ITEM);
     const lastAnimatedPositionIndex = lastAnimatedId ? allPositions.findIndex(position=>position.id == lastAnimatedId) +1 : undefined;
+    const fallbackAnimCount = 3;
     if(lastAnimatedPositionIndex) {
         positionsToRenderDirectly = allPositions.slice(0, lastAnimatedPositionIndex);
         positionsToAnimate = allPositions.slice(lastAnimatedPositionIndex-1);
     } else {
-        positionsToAnimate = [...allPositions];
+        const toAnimStartIndex = allPositions.length - fallbackAnimCount;
+        positionsToRenderDirectly = allPositions.slice(0, toAnimStartIndex);
+        positionsToAnimate = allPositions.slice(toAnimStartIndex-1);
+        // positionsToAnimate = [...allPositions];
     }
 
     console.log('to render directly', positionsToRenderDirectly);
@@ -98,7 +102,8 @@ function fetchPositionData() {
 
         position.date = new Date(position.at);
         position.day = DAYS[position.date.getDay()];
-        position.label = `${position.day}\nà ${position.date.getHours()}H`
+        position.numberDay = `${position.date.getDate().toString().padStart(2, '0')}/${position.date.getMonth().toString().padStart(2, '0')}`
+        position.label = `${position.day} ${position.numberDay}\nà ${position.date.getHours()}H`
 
         positionFeature.attributes = position
 
@@ -145,7 +150,8 @@ function fetchPositionData() {
 
         position.date = new Date(position.at);
         position.day = DAYS[position.date.getDay()];
-        position.label = `${position.day}\nà ${position.date.getHours()}H`
+        position.numberDay = `${position.date.getDate().toString().padStart(2, '0')}/${position.date.getMonth().toString().padStart(2, '0')}`
+        position.label = `${position.day} ${position.numberDay}\nà ${position.date.getHours()}H`
 
         positionFeature.attributes = position
 
